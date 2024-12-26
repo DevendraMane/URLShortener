@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>URL-Shortener</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>URL Shortener 🤏🏽</h1>
+      <form id="shorten-form">
+        <div>
+          <label for="url">Enter URL:</label>
+          <input type="url" name="url" id="url" required />
+        </div>
+        <div>
+          <label for="shortCode">Enter shortCode:</label>
+          <input type="text" name="shortCode" id="shortCode" />
+        </div>
+        <button type="submit">Shorten</button>
+      </form>
+      <h2>Shortened URLs</h2>
+      <ul id="shortened-urls"></ul>
+    </div>
+  </body>
+  <script>
+    // *For fetching "/links" route from the server
+    const fetchShortenedURL = async () => {
+      // 1st we are fetching all the data from the backend
+      const response = await fetch("/links");
+      const links = await response.json();
+      console.log("links: ", links);
+
+      const list = document.getElementById("shortened-urls");
+      list.innerHTML = "";
+
+      // For looping the links to the li element:↓↓↓
+      // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/entries
+      for (const [shortCode, url] of Object.entries(links)) {
+        const li = document.createElement("li");
+
+        // for long urls
+        const trucatedURLs = url.length >= 30 ? `${url.slice(0, 30)}...` : url;
+
+        li.innerHTML = `<a href="/${shortCode}" target="_blank">${window.location.origin}/${shortCode}<a/> - ${trucatedURLs}`;
+
+        list.appendChild(li);
+      }
+    };
+
+    //=======================================================//
+
+    //* below code is for getting the user entered data on the console
+    document
+      .getElementById("shorten-form")
+      .addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const formData = new FormData(event.target);
+        const url = formData.get("url");
+        const shortCode = formData.get("shortCode");
+
+        console.log(url, shortCode);
+        // ======================================================================= //
+
+        // *Code for sending the html data to the "shortCode" route
+        try {
+          const response = await fetch("/shortCode", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url, shortCode }),
+          });
+
+          // if data is sent successfully
+          if (response.ok) {
+            // we called it here bcoz if new link is added then it should be showed here
+            fetchShortenedURL();
+            alert("Submitted successfully");
+          } else {
+            const errMsg = await response.text();
+            alert(errMsg);
+          }
+        } catch (error) {
+          console.error("Error:", error);
+        }
+      });
+    // For always showing the links stored in the data folder
+    fetchShortenedURL();
+  </script>
+</html>
